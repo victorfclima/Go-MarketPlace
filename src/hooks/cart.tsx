@@ -7,6 +7,7 @@ import React, {
 } from 'react';
 
 import AsyncStorage from '@react-native-community/async-storage';
+import { isBigIntLiteral } from 'typescript';
 
 interface Product {
   id: string;
@@ -27,18 +28,38 @@ const CartContext = createContext<CartContext | null>(null);
 
 const CartProvider: React.FC = ({ children }) => {
   const [products, setProducts] = useState<Product[]>([]);
+  const productsOnCart: Product[] = [];
 
   useEffect(() => {
     async function loadProducts(): Promise<void> {
-      // TODO LOAD ITEMS FROM ASYNC STORAGE
+      // AsyncStorage.clear();
+      const productKeys = await AsyncStorage.getAllKeys();
+      const addedProducts = await AsyncStorage.multiGet(productKeys);
+      addedProducts.map(item => {
+        const oldProduct = JSON.parse(item[1]);
+        productsOnCart.push(oldProduct);
+        return setProducts(productsOnCart);
+      });
     }
 
     loadProducts();
   }, []);
 
-  const addToCart = useCallback(async product => {
-    // TODO ADD A NEW ITEM TO THE CART
-  }, []);
+  // useEffect(() => {
+  //   console.log(products);
+  // }, [products]);
+
+  const addToCart = useCallback(
+    async product => {
+      const productKeys = await AsyncStorage.getAllKeys();
+      if (productKeys.indexOf(product.id) < 0) {
+        await AsyncStorage.setItem(`${product.id}`, JSON.stringify(product));
+        return setProducts([...products, product]);
+      }
+      return console.log('Product is already on cart');
+    },
+    [products],
+  );
 
   const increment = useCallback(async id => {
     // TODO INCREMENTS A PRODUCT QUANTITY IN THE CART
