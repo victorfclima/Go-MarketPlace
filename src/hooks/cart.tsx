@@ -32,14 +32,13 @@ const CartProvider: React.FC = ({ children }) => {
 
   useEffect(() => {
     async function loadProducts(): Promise<void> {
-      // AsyncStorage.clear();
-      const productKeys = await AsyncStorage.getAllKeys();
-      const addedProducts = await AsyncStorage.multiGet(productKeys);
-      addedProducts.map(item => {
-        const oldProduct = JSON.parse(item[1]);
-        productsOnCart.push(oldProduct);
-        return setProducts(productsOnCart);
-      });
+      const storagedProducts = await AsyncStorage.getItem(
+        '@GoMarketPlace:products',
+      );
+
+      if (storagedProducts) {
+        setProducts([...JSON.parse(storagedProducts)]);
+      }
     }
 
     loadProducts();
@@ -49,32 +48,34 @@ const CartProvider: React.FC = ({ children }) => {
     async id => {
       const findProduct = products.findIndex(item => item.id === id);
       products[findProduct].quantity += 1;
-      await AsyncStorage.setItem(
-        `${id}`,
-        JSON.stringify(products[findProduct]),
-      );
       setProducts([...products]);
+      await AsyncStorage.setItem(
+        '@GoMarketPlace:products',
+        JSON.stringify(products),
+      );
     },
     [products],
   );
 
   const addToCart = useCallback(
     async product => {
-      const productKeys = await AsyncStorage.getAllKeys();
-      if (productKeys.indexOf(product.id) < 0) {
-        const newProductAdded = {
-          ...product,
-          quantity: 1,
-        };
-        await AsyncStorage.setItem(
-          `${product.id}`,
-          JSON.stringify(newProductAdded),
-        );
-        return setProducts([...products, newProductAdded]);
+      const productExists = products.find(p => p.id === product.id);
+
+      if (productExists) {
+        return increment(product.id);
       }
-      return increment(product.id);
+      const newProductAdded = {
+        ...product,
+        quantity: 1,
+      };
+      setProducts([...products, newProductAdded]);
+
+      await AsyncStorage.setItem(
+        '@GoMarketPlace:products',
+        JSON.stringify(products),
+      );
     },
-    [products],
+    [products, increment],
   );
 
   const decrement = useCallback(
@@ -84,13 +85,16 @@ const CartProvider: React.FC = ({ children }) => {
       setProducts([...products]);
       if (products[findProduct].quantity > 0) {
         await AsyncStorage.setItem(
-          `${id}`,
-          JSON.stringify(products[findProduct]),
+          '@GoMarketPlace:products',
+          JSON.stringify(products),
         );
       } else {
         const productsRemaining = products.filter(product => product.id !== id);
         setProducts(productsRemaining);
-        await AsyncStorage.removeItem(`${id}`);
+        await AsyncStorage.setItem(
+          '@GoMarketPlace:products',
+          JSON.stringify(productsRemaining),
+        );
       }
     },
     [products],

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useMemo } from 'react';
 
 import { useNavigation } from '@react-navigation/native';
 
@@ -15,19 +15,15 @@ import formatValue from '../../utils/formatValue';
 
 import { useCart } from '../../hooks/cart';
 
-// Calculo do total
-// Navegação no clique do TouchableHighlight
-
 const FloatingCart: React.FC = () => {
   const { products } = useCart();
 
   const navigation = useNavigation();
 
   const cartTotal = useMemo(() => {
-    console.log(products);
     const totalValueCart = products.reduce(
-      (accumulator, productQuantity) =>
-        accumulator + productQuantity.price * productQuantity.quantity,
+      (accumulator, productPrice) =>
+        accumulator + productPrice.price * productPrice.quantity,
       0,
     );
 
@@ -39,7 +35,6 @@ const FloatingCart: React.FC = () => {
       (accumulator, productQuantity) => accumulator + productQuantity.quantity,
       0,
     );
-
     return totalProducts;
   }, [products]);
 
