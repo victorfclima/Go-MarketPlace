@@ -45,31 +45,34 @@ const CartProvider: React.FC = ({ children }) => {
     loadProducts();
   }, []);
 
-  const addToCart = useCallback(
-    async product => {
-      const productKeys = await AsyncStorage.getAllKeys();
-      if (productKeys.indexOf(product.id) < 0) {
-        const newProduct = {
-          ...product,
-          quantity: 1,
-        };
-        await AsyncStorage.setItem(`${product.id}`, JSON.stringify(newProduct));
-        return setProducts([...products, product]);
-      }
-      return console.log('Product is already on cart');
-    },
-    [products],
-  );
-
   const increment = useCallback(
     async id => {
       const findProduct = products.findIndex(item => item.id === id);
       products[findProduct].quantity += 1;
-      setProducts([...products]);
       await AsyncStorage.setItem(
         `${id}`,
         JSON.stringify(products[findProduct]),
       );
+      setProducts([...products]);
+    },
+    [products],
+  );
+
+  const addToCart = useCallback(
+    async product => {
+      const productKeys = await AsyncStorage.getAllKeys();
+      if (productKeys.indexOf(product.id) < 0) {
+        const newProductAdded = {
+          ...product,
+          quantity: 1,
+        };
+        await AsyncStorage.setItem(
+          `${product.id}`,
+          JSON.stringify(newProductAdded),
+        );
+        return setProducts([...products, newProductAdded]);
+      }
+      return increment(product.id);
     },
     [products],
   );
@@ -79,10 +82,16 @@ const CartProvider: React.FC = ({ children }) => {
       const findProduct = products.findIndex(item => item.id === id);
       products[findProduct].quantity -= 1;
       setProducts([...products]);
-      await AsyncStorage.setItem(
-        `${id}`,
-        JSON.stringify(products[findProduct]),
-      );
+      if (products[findProduct].quantity > 0) {
+        await AsyncStorage.setItem(
+          `${id}`,
+          JSON.stringify(products[findProduct]),
+        );
+      } else {
+        const productsRemaining = products.filter(product => product.id !== id);
+        setProducts(productsRemaining);
+        await AsyncStorage.removeItem(`${id}`);
+      }
     },
     [products],
   );

@@ -24,6 +24,7 @@ const FloatingCart: React.FC = () => {
   const navigation = useNavigation();
 
   const cartTotal = useMemo(() => {
+    console.log(products);
     const totalValueCart = products.reduce(
       (accumulator, productQuantity) =>
         accumulator + productQuantity.price * productQuantity.quantity,
